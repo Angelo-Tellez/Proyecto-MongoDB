@@ -1,0 +1,172 @@
+<?php
+/**
+ * categorias.php — Lógica del módulo de Categorías (MongoDB)
+ *
+ * Funciones:
+ *   obtenerTodasCategorias()   → find() completo con conteo de cursos
+ *   obtenerCategoriaPorId()    → findOne()
+ *   crearCategoria()           → insertOne()
+ *   editarCategoria()          → updateOne() en categorias + updateMany() en cursos
+ *   cambiarEstatusCategoria()  → updateOne() toggle estatus
+ */
+
+function obtenerTodasCategorias(): array {
+    $db = obtenerConexion();
+
+    // Traer todas las categorias y contar cursos con aggregate + lookup
+    $pipeline = [
+        ['$lookup' => [
+            'from'         => 'cursos',
+            'localField'   => '_id_str',   // campo auxiliar
+            'foreignField' => 'categoria.id',
+            'as'           => 'cursos_rel',
+        ]],
+        // Como _id es ObjectId pero categoria.id es string, usamos $addFields para convertir
+        ['$addFields' => [
+            '_id_str' => ['$toString' => '$_id'],
+        ]],
+        ['$lookup' => [
+            'from' => 'cursos',
+            'let'  => ['cat_id' => ['$toString' => '$_id']],
+            'pipeline' => [
+                ['$match' => ['$expr' => ['$eq' => ['$categoria.id', '$$cat_id']]]],
+            ],
+            'as' => 'cursos_rel',
+        ]],
+        ['$project' => [
+            'ID_CATEGORIA'  => ['$toString' => '$_id'],
+            'NOMBRE'        => '$nombre',
+            'DESCRIPCION'   => '$descripcion',
+            'ESTATUS'       => '$estatus',
+            'FECHA_CREACION'=> '$fecha_creacion',
+            'TOTAL_CURSOS'  => ['$size' => '$cursos_rel'],
+        ]],
+        ['$sort' => ['NOMBRE' => 1]],
+    ];
+
+    $resultado = iterator_to_array($db->categorias->aggregate($pipeline));
+    return array_map(fn($r) => iterator_to_array($r), $resultado);
+}
+
+function obtenerCategoriaPorId(string $id): ?array {
+    $db = obtenerConexion();
+
+    try {
+        $oid = new MongoDB\BSON\ObjectId($id);
+    } catch (Exception $e) {
+        return null;
+    }
+
+    $doc = $db->categorias->findOne(['_id' => $oid]);
+    if (!$doc) return null;
+
+    return [
+        'ID_CATEGORIA' => idStr($doc['_id']),
+        'NOMBRE'       => $doc['nombre'],
+        'DESCRIPCION'  => $doc['descripcion'] ?? '',
+        'ESTATUS'      => $doc['estatus'],
+    ];
+}
+
+function crearCategoria(array $datos): array {
+    $db = obtenerConexion();
+
+    $nombre      = trim($datos['nombre']      ?? '');
+    $descripcion = trim($datos['descripcion'] ?? '');
+
+    if (empty($nombre))
+        return ['exito' => false, 'mensaje' => 'El nombre de la categoría es obligatorio.'];
+
+    // Unicidad de nombre
+    $existe = $db->categorias->findOne(['nombre' => $nombre]);
+    if ($existe)
+        return ['exito' => false, 'mensaje' => "Ya existe una categoría con el nombre \"$nombre\"."];
+
+    try {
+        $db->categorias->insertOne([
+            'nombre'        => $nombre,
+            'descripcion'   => $descripcion !== '' ? $descripcion : null,
+            'estatus'       => 'activo',
+            'fecha_creacion'=> new MongoDB\BSON\UTCDateTime(),
+        ]);
+        return ['exito' => true, 'mensaje' => 'Categoría creada correctamente.'];
+    } catch (Exception $e) {
+        return ['exito' => false, 'mensaje' => 'Error al crear: ' . $e->getMessage()];
+    }
+}
+
+function editarCategoria(array $datos): array {
+    $db = obtenerConexion();
+
+    $id          = trim($datos['id_categoria'] ?? '');
+    $nombre      = trim($datos['nombre']       ?? '');
+    $descripcion = trim($datos['descripcion']  ?? '');
+
+    if (empty($id))     return ['exito' => false, 'mensaje' => 'ID de categoría inválido.'];
+    if (empty($nombre)) return ['exito' => false, 'mensaje' => 'El nombre es obligatorio.'];
+
+    try {
+        $oid = new MongoDB\BSON\ObjectId($id);
+    } catch (Exception $e) {
+        return ['exito' => false, 'mensaje' => 'ID de categoría inválido.'];
+    }
+
+    // Verificar unicidad (excluyendo la propia categoría)
+    $existe = $db->categorias->findOne([
+        'nombre' => $nombre,
+        '_id'    => ['$ne' => $oid],
+    ]);
+    if ($existe)
+        return ['exito' => false, 'mensaje' => "Ya existe otra categoría con el nombre \"$nombre\"."];
+
+    try {
+        // Actualizar la colección categorias
+        $res = $db->categorias->updateOne(
+            ['_id' => $oid],
+            ['$set' => [
+                'nombre'      => $nombre,
+                'descripcion' => $descripcion !== '' ? $descripcion : null,
+            ]]
+        );
+
+        if ($res->getMatchedCount() === 0)
+            return ['exito' => false, 'mensaje' => 'Categoría no encontrada.'];
+
+        // Sincronizar el nombre embebido en todos los cursos de esa categoría
+        $db->cursos->updateMany(
+            ['categoria.id' => $id],
+            ['$set' => ['categoria.nombre' => $nombre]]
+        );
+
+        return ['exito' => true, 'mensaje' => 'Categoría actualizada correctamente.'];
+    } catch (Exception $e) {
+        return ['exito' => false, 'mensaje' => 'Error al editar: ' . $e->getMessage()];
+    }
+}
+
+function cambiarEstatusCategoria(string $id): array {
+    $db = obtenerConexion();
+
+    try {
+        $oid = new MongoDB\BSON\ObjectId($id);
+    } catch (Exception $e) {
+        return ['exito' => false, 'mensaje' => 'ID de categoría inválido.'];
+    }
+
+    $doc = $db->categorias->findOne(['_id' => $oid]);
+    if (!$doc)
+        return ['exito' => false, 'mensaje' => 'Categoría no encontrada.'];
+
+    $nuevo  = $doc['estatus'] === 'activo' ? 'inactivo' : 'activo';
+    $accion = $nuevo === 'inactivo' ? 'desactivada' : 'activada';
+
+    $res = $db->categorias->updateOne(
+        ['_id' => $oid],
+        ['$set' => ['estatus' => $nuevo]]
+    );
+
+    if ($res->getModifiedCount() === 0)
+        return ['exito' => false, 'mensaje' => 'No se pudo actualizar el estatus.'];
+
+    return ['exito' => true, 'mensaje' => "Categoría $accion correctamente.", 'nuevo_estatus' => $nuevo];
+}

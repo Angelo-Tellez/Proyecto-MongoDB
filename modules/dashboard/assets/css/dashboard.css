@@ -1,0 +1,16 @@
+.dashboard-fila-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+
+/* Highlight primera columna de tabla con color */
+tbody td:first-child {
+    font-weight: 600;
+    color: var(--oscuro);
+}
+
+@media (max-width: 900px) {
+    .dashboard-fila-2 { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,40 @@
+.form-titulo {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 26px;
+    color: var(--oscuro);
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--gris-line);
+    position: relative;
+}
+
+/* Acento de color bajo el título */
+.form-titulo::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 50px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--rojo), var(--naranja));
+    border-radius: 2px;
+}
+
+.form-fila-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.form-acciones {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 20px;
+    border-top: 1px solid var(--gris-line);
+}
+
+@media (max-width: 600px) {
+    .form-fila-2 { grid-template-columns: 1fr; }
+}

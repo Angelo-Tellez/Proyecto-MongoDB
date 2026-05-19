@@ -1,0 +1,4 @@
+-- Este archivo ya NO se usa. La base de datos es ahora MongoDB.
+-- Para cargar los datos iniciales ejecuta:
+--   php bd/seed_mongo.php
+-- Ver instrucciones completas en README_MONGO.md

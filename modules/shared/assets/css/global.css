@@ -1,0 +1,409 @@
+/* =============================================================
+   GLOBAL.CSS
+   Hoja de estilos base compartida por todos los módulos.
+   Contiene: variables, reset, layout, sidebar, contenido,
+   cards, tablas, formularios, botones, filtros y alertas.
+   ============================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap');
+
+/* -------------------------------------------------------------
+   VARIABLES GLOBALES
+   Paleta: --rojo #E15B42 | --naranja #F98257 | --amarillo #F8C16F
+           --menta #87D5C8 | --verde #A8C95E
+   ------------------------------------------------------------- */
+:root {
+    /* Paleta principal */
+    --rojo:     #E15B42;
+    --naranja:  #F98257;
+    --amarillo: #F8C16F;
+    --menta:    #87D5C8;
+    --verde:    #A8C95E;
+
+    /* Escala de grises */
+    --oscuro:   #1C1C1E;   /* Texto principal y sidebar */
+    --gris:     #64748b;   /* Texto secundario y labels */
+    --linea:    #E8E8EE;   /* Bordes y separadores */
+    --fondo:    #F5F5F7;   /* Fondo general de la página */
+    --blanco:   #FFFFFF;   /* Fondo de tarjetas y paneles */
+
+    /* Utilidades */
+    --radius:   10px;                        /* Bordes redondeados globales */
+    --shadow:   0 2px 12px rgba(0,0,0,0.08); /* Sombra suave para cards */
+    --sidebar:  245px;                       /* Ancho fijo del sidebar */
+}
+
+/* -------------------------------------------------------------
+   RESET BÁSICO
+   Normaliza márgenes, padding y modelo de caja en todos los
+   elementos para evitar inconsistencias entre navegadores.
+   ------------------------------------------------------------- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'DM Sans', sans-serif; /* Fuente base para contenido */
+    background: var(--fondo);
+    color: var(--oscuro);
+    font-size: 15px;
+}
+
+/* -------------------------------------------------------------
+   LAYOUT PRINCIPAL
+   Flex horizontal: sidebar fijo a la izquierda +
+   área de contenido que ocupa el resto del ancho.
+   ------------------------------------------------------------- */
+.layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* -------------------------------------------------------------
+   SIDEBAR
+   Panel de navegación lateral fijo. Se mantiene visible
+   al hacer scroll gracias a position: fixed.
+   ------------------------------------------------------------- */
+.sidebar {
+    width: var(--sidebar);
+    min-height: 100vh;
+    background: var(--oscuro);
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Franja de color superior que representa la paleta completa */
+.sidebar::before {
+    content: '';
+    display: block;
+    height: 4px;
+    background: linear-gradient(
+        90deg,
+        var(--rojo),
+        var(--naranja),
+        var(--amarillo),
+        var(--menta),
+        var(--verde)
+    );
+}
+
+/* Logo / nombre del sistema */
+.sidebar__logo {
+    padding: 24px 20px;
+    border-bottom: 1px solid #2E2E32;
+    font-family: 'Syne', sans-serif; /* Fuente display para títulos */
+    color: var(--blanco);
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/* Subtítulo debajo del nombre del sistema */
+.sidebar__logo small {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    color: #9A9AA8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+}
+
+/* Contenedor de los enlaces de navegación */
+.sidebar__nav {
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Enlace individual del menú */
+.sidebar__link {
+    padding: 11px 14px;
+    border-radius: 8px;
+    color: #9A9AA8;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s, color 0.2s;
+}
+
+.sidebar__link:hover {
+    background: #2E2E32;
+    color: var(--blanco);
+}
+
+/* Enlace activo: resaltado con degradado rojo -> naranja */
+.sidebar__link--activo {
+    background: linear-gradient(135deg, var(--rojo), var(--naranja));
+    color: var(--blanco);
+}
+
+/* -------------------------------------------------------------
+   ÁREA DE CONTENIDO PRINCIPAL
+   Ocupa todo el ancho restante después del sidebar fijo.
+   ------------------------------------------------------------- */
+.contenido {
+    margin-left: var(--sidebar); /* Desplazamiento igual al ancho del sidebar */
+    flex: 1;
+}
+
+/* Encabezado superior con el título del módulo activo */
+.contenido__header {
+    background: var(--blanco);
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--linea);
+}
+
+.contenido__header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+/* Zona central donde se renderiza el contenido de cada módulo */
+.contenido__body {
+    padding: 28px 32px;
+}
+
+/* -------------------------------------------------------------
+   CARDS DE ESTADÍSTICAS
+   Grid adaptable para mostrar métricas clave en el dashboard.
+   Cada card tiene un acento de color en el borde superior.
+   ------------------------------------------------------------- */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+/* Card base: borde rojo por defecto */
+.card {
+    background: var(--blanco);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+    border-top: 4px solid var(--rojo);
+}
+
+/* Modificadores de color por tipo de métrica */
+.card--verde    { border-top-color: var(--verde); }
+.card--naranja  { border-top-color: var(--naranja); }
+.card--amarillo { border-top-color: var(--amarillo); }
+.card--morado   { border-top-color: var(--menta); }
+
+/* Etiqueta descriptiva de la métrica */
+.card__label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+/* Valor numérico principal de la métrica */
+.card__valor {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+}
+
+/* -------------------------------------------------------------
+   TABLAS DE DATOS
+   Contenedor con fondo blanco, bordes redondeados y sombra.
+   Usado en dashboard, búsqueda y cualquier listado.
+   ------------------------------------------------------------- */
+.tabla-wrapper {
+    background: var(--blanco);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden; /* Evita que la tabla rompa el border-radius */
+    margin-bottom: 24px;
+}
+
+/* Título de la sección de tabla */
+.tabla-wrapper h2 {
+    padding: 16px 22px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--linea);
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+/* Encabezados de columna */
+thead th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    background: var(--fondo);
+    border-bottom: 1px solid var(--linea);
+}
+
+/* Celdas de datos */
+tbody td {
+    padding: 12px 16px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--fondo);
+    color: #334155;
+}
+
+tbody tr:last-child td { border-bottom: none; }
+
+/* Fila resaltada al pasar el cursor */
+tbody tr:hover { background: #fff8f6; }
+
+/* -------------------------------------------------------------
+   BADGES DE ESTATUS
+   Etiquetas visuales para indicar el estado de un registro.
+   ------------------------------------------------------------- */
+.badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.badge--activo   { background: rgba(168,201,94,0.15); color: #4a7a10; }
+.badge--inactivo { background: rgba(225,91,66,0.12);  color: var(--rojo); }
+
+/* -------------------------------------------------------------
+   FORMULARIOS
+   Usado en el módulo de Alta. La card envuelve el formulario
+   y limita su ancho máximo para mejor legibilidad.
+   ------------------------------------------------------------- */
+.form-card {
+    background: var(--blanco);
+    border-radius: var(--radius);
+    padding: 28px;
+    box-shadow: var(--shadow);
+    max-width: 700px;
+}
+
+/* Grupo campo: label + input apilados verticalmente */
+.form-group { margin-bottom: 18px; }
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 6px;
+}
+
+/* Estilos compartidos para inputs, selects y textareas */
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid var(--linea);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--fondo);
+    color: var(--oscuro);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* Estado foco: resalta con color naranja de la paleta */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--naranja);
+    box-shadow: 0 0 0 3px rgba(249,130,87,0.15);
+    background: var(--blanco);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 90px;
+}
+
+/* -------------------------------------------------------------
+   BOTONES
+   .btn--primario: acción principal (degradado rojo->naranja)
+   .btn--gris: acción secundaria o cancelar
+   ------------------------------------------------------------- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+.btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+.btn--primario { background: linear-gradient(135deg, var(--rojo), var(--naranja)); color: var(--blanco); }
+.btn--gris     { background: var(--linea); color: #334155; }
+
+/* -------------------------------------------------------------
+   PANEL DE FILTROS
+   Usado en el módulo de Búsqueda. El borde izquierdo menta
+   lo diferencia visualmente del resto de panels.
+   ------------------------------------------------------------- */
+.filtros-card {
+    background: var(--blanco);
+    border-radius: var(--radius);
+    padding: 22px 26px;
+    box-shadow: var(--shadow);
+    margin-bottom: 22px;
+    border-left: 4px solid var(--menta);
+}
+
+.filtros-card h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 18px;
+}
+
+/* Grid de filtros: se adapta al ancho disponible */
+.filtros-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+/* -------------------------------------------------------------
+   ALERTAS DE RESPUESTA
+   Se muestran después de acciones como guardar o validar.
+   El borde izquierdo refuerza el color del tipo de alerta.
+   ------------------------------------------------------------- */
+.alerta {
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 20px;
+}
+
+/* Éxito: tono verde de la paleta */
+.alerta--exito { background: rgba(168,201,94,0.15); color: #4a7a10; border-left: 4px solid var(--verde); }
+
+/* Error: tono rojo de la paleta */
+.alerta--error { background: rgba(225,91,66,0.10);  color: var(--rojo); border-left: 4px solid var(--rojo); }
