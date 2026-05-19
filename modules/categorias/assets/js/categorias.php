@@ -107,10 +107,11 @@ function crearCategoria(array $datos): array {
 
     try {
         $db->categorias->insertOne([
-            'nombre'        => $nombre,
-            'descripcion'   => $descripcion !== '' ? $descripcion : null,
-            'estatus'       => 'activo',
-            'fecha_creacion'=> new MongoDB\BSON\UTCDateTime(),
+            'nombre'             => $nombre,
+            'nombre_normalizado' => $nombreNorm,
+            'descripcion'        => $descripcion !== '' ? $descripcion : null,
+            'estatus'            => 'activo',
+            'fecha_creacion'     => new MongoDB\BSON\UTCDateTime(),
         ]);
         return ['exito' => true, 'mensaje' => 'Categoría creada correctamente.'];
     } catch (Exception $e) {
@@ -150,8 +151,9 @@ function editarCategoria(array $datos): array {
         $res = $db->categorias->updateOne(
             ['_id' => $oid],
             ['$set' => [
-                'nombre'      => $nombre,
-                'descripcion' => $descripcion !== '' ? $descripcion : null,
+                'nombre'             => $nombre,
+                'nombre_normalizado' => $nombreNorm,
+                'descripcion'        => $descripcion !== '' ? $descripcion : null,
             ]]
         );
 
