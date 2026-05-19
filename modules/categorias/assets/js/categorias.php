@@ -68,6 +68,26 @@ function obtenerCategoriaPorId(string $id): ?array {
     ];
 }
 
+/**
+ * Normaliza un string para comparación:
+ * 1. Convierte a minúsculas
+ * 2. Elimina acentos y diacríticos (á→a, é→e, ñ→n, ü→u, etc.)
+ * 3. Elimina espacios extra al inicio, fin y entre palabras
+ */
+function normalizarNombre(string $texto): string {
+    // Minúsculas
+    $texto = mb_strtolower($texto, 'UTF-8');
+    // Reemplazar caracteres con acento por su equivalente sin acento
+    $texto = str_replace(
+        ['á','é','í','ó','ú','ü','ñ','à','è','ì','ò','ù','â','ê','î','ô','û'],
+        ['a','e','i','o','u','u','n','a','e','i','o','u','a','e','i','o','u'],
+        $texto
+    );
+    // Eliminar espacios múltiples y recortar
+    $texto = preg_replace('/\s+/', ' ', trim($texto));
+    return $texto;
+}
+
 function crearCategoria(array $datos): array {
     $db = obtenerConexion();
 
@@ -77,10 +97,13 @@ function crearCategoria(array $datos): array {
     if (empty($nombre))
         return ['exito' => false, 'mensaje' => 'El nombre de la categoría es obligatorio.'];
 
-    // Unicidad de nombre
-    $existe = $db->categorias->findOne(['nombre' => $nombre]);
-    if ($existe)
-        return ['exito' => false, 'mensaje' => "Ya existe una categoría con el nombre \"$nombre\"."];
+    // Unicidad de nombre — insensible a mayúsculas, acentos y espacios extra
+    $nombreNorm = normalizarNombre($nombre);
+    $todas = $db->categorias->find([], ['projection' => ['nombre' => 1]]);
+    foreach ($todas as $doc) {
+        if (normalizarNombre($doc['nombre']) === $nombreNorm)
+            return ['exito' => false, 'mensaje' => "Ya existe una categoría con el nombre \"$nombre\"."];
+    }
 
     try {
         $db->categorias->insertOne([
@@ -111,13 +134,16 @@ function editarCategoria(array $datos): array {
         return ['exito' => false, 'mensaje' => 'ID de categoría inválido.'];
     }
 
-    // Verificar unicidad (excluyendo la propia categoría)
-    $existe = $db->categorias->findOne([
-        'nombre' => $nombre,
-        '_id'    => ['$ne' => $oid],
-    ]);
-    if ($existe)
-        return ['exito' => false, 'mensaje' => "Ya existe otra categoría con el nombre \"$nombre\"."];
+    // Verificar unicidad (excluyendo la propia categoría) — insensible a mayúsculas, acentos y espacios
+    $nombreNorm = normalizarNombre($nombre);
+    $otras = $db->categorias->find(
+        ['_id' => ['$ne' => $oid]],
+        ['projection' => ['nombre' => 1]]
+    );
+    foreach ($otras as $doc) {
+        if (normalizarNombre($doc['nombre']) === $nombreNorm)
+            return ['exito' => false, 'mensaje' => "Ya existe otra categoría con el nombre \"$nombre\"."];
+    }
 
     try {
         // Actualizar la colección categorias
