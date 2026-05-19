@@ -97,13 +97,11 @@ function crearCategoria(array $datos): array {
     if (empty($nombre))
         return ['exito' => false, 'mensaje' => 'El nombre de la categoría es obligatorio.'];
 
-    // Unicidad de nombre — insensible a mayúsculas, acentos y espacios extra
+    // Unicidad de nombre — consulta directa sobre el campo ya normalizado en BD
     $nombreNorm = normalizarNombre($nombre);
-    $todas = $db->categorias->find([], ['projection' => ['nombre' => 1]]);
-    foreach ($todas as $doc) {
-        if (normalizarNombre($doc['nombre']) === $nombreNorm)
-            return ['exito' => false, 'mensaje' => "Ya existe una categoría con el nombre \"$nombre\"."];
-    }
+    $existe = $db->categorias->findOne(['nombre_normalizado' => $nombreNorm]);
+    if ($existe)
+        return ['exito' => false, 'mensaje' => "Ya existe una categoría con el nombre \"$nombre\"."];
 
     try {
         $db->categorias->insertOne([
@@ -135,16 +133,14 @@ function editarCategoria(array $datos): array {
         return ['exito' => false, 'mensaje' => 'ID de categoría inválido.'];
     }
 
-    // Verificar unicidad (excluyendo la propia categoría) — insensible a mayúsculas, acentos y espacios
+    // Verificar unicidad (excluyendo la propia categoría) — consulta directa sobre nombre_normalizado
     $nombreNorm = normalizarNombre($nombre);
-    $otras = $db->categorias->find(
-        ['_id' => ['$ne' => $oid]],
-        ['projection' => ['nombre' => 1]]
-    );
-    foreach ($otras as $doc) {
-        if (normalizarNombre($doc['nombre']) === $nombreNorm)
-            return ['exito' => false, 'mensaje' => "Ya existe otra categoría con el nombre \"$nombre\"."];
-    }
+    $existe = $db->categorias->findOne([
+        'nombre_normalizado' => $nombreNorm,
+        '_id'                => ['$ne' => $oid],
+    ]);
+    if ($existe)
+        return ['exito' => false, 'mensaje' => "Ya existe otra categoría con el nombre \"$nombre\"."];
 
     try {
         // Actualizar la colección categorias
