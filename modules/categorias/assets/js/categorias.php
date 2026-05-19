@@ -168,6 +168,50 @@ function editarCategoria(array $datos): array {
     }
 }
 
+function eliminarCategoria(string $id): array {
+    $db = obtenerConexion();
+
+    try {
+        $oid = new MongoDB\BSON\ObjectId($id);
+    } catch (Exception $e) {
+        return ['exito' => false, 'mensaje' => 'ID de categoría inválido.'];
+    }
+
+    // Verificar que la categoría existe
+    $cat = $db->categorias->findOne(['_id' => $oid]);
+    if (!$cat)
+        return ['exito' => false, 'mensaje' => 'Categoría no encontrada.'];
+
+    // Contar cursos asignados
+    $totalCursos = $db->cursos->countDocuments(['categoria.id' => $id]);
+
+    // Si tiene cursos y no se confirmó la eliminación en cascada, avisar
+    if ($totalCursos > 0 && empty($_POST['confirmar_cascada']))
+        return [
+            'exito'        => false,
+            'cascada'      => true,
+            'total_cursos' => $totalCursos,
+            'mensaje'      => "La categoría tiene $totalCursos curso(s) asignado(s). Si la eliminas, también se eliminarán esos cursos.",
+        ];
+
+    try {
+        // Eliminar cursos de esta categoría primero
+        if ($totalCursos > 0)
+            $db->cursos->deleteMany(['categoria.id' => $id]);
+
+        // Eliminar la categoría
+        $db->categorias->deleteOne(['_id' => $oid]);
+
+        $msg = $totalCursos > 0
+            ? "Categoría eliminada junto con $totalCursos curso(s)."
+            : 'Categoría eliminada correctamente.';
+
+        return ['exito' => true, 'mensaje' => $msg];
+    } catch (Exception $e) {
+        return ['exito' => false, 'mensaje' => 'Error al eliminar: ' . $e->getMessage()];
+    }
+}
+
 function cambiarEstatusCategoria(string $id): array {
     $db = obtenerConexion();
 

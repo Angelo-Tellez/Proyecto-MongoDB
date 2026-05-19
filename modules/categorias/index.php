@@ -38,6 +38,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($accion === 'eliminar') {
+        $id  = trim($_POST['id_categoria'] ?? '');
+        $res = eliminarCategoria($id);
+
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
+            header('Content-Type: application/json');
+            echo json_encode($res);
+            exit;
+        }
+        $msg = $res['exito'] ? 'ok_eliminar' : 'err_' . urlencode($res['mensaje']);
+        header("Location: index.php?msg=$msg");
+        exit;
+    }
+
     if ($accion === 'crear') {
         $res = crearCategoria($_POST);
         $msg = $res['exito'] ? 'ok_crear' : 'err_' . urlencode($res['mensaje']);
@@ -65,9 +79,10 @@ if (isset($_GET['editar'])) {
 $flash = '';
 $flash_tipo = '';
 $msg_param = $_GET['msg'] ?? '';
-if ($msg_param === 'ok_crear')   { $flash = 'Categoría creada correctamente.';      $flash_tipo = 'exito'; }
+if ($msg_param === 'ok_crear')    { $flash = 'Categoría creada correctamente.';      $flash_tipo = 'exito'; }
 if ($msg_param === 'ok_editar')  { $flash = 'Categoría actualizada correctamente.'; $flash_tipo = 'exito'; }
 if ($msg_param === 'ok_toggle')  { $flash = 'Estatus actualizado correctamente.';   $flash_tipo = 'exito'; }
+if ($msg_param === 'ok_eliminar'){ $flash = 'Categoría eliminada correctamente.';   $flash_tipo = 'exito'; }
 if (str_starts_with($msg_param, 'err_')) {
     $flash      = urldecode(substr($msg_param, 4));
     $flash_tipo = 'error';
@@ -196,6 +211,13 @@ require_once __DIR__ . '/../layout.php';
                                     title="<?= $cat['ESTATUS'] === 'activo' ? 'Desactivar' : 'Activar' ?>">
                                 <?= $cat['ESTATUS'] === 'activo' ? '🔴' : '🟢' ?>
                             </button>
+
+                            <!-- Eliminar via AJAX -->
+                            <button class="btn-icono btn-eliminar"
+                                    data-id="<?= $cat['ID_CATEGORIA'] ?>"
+                                    data-nombre="<?= htmlspecialchars($cat['NOMBRE']) ?>"
+                                    data-cursos="<?= $cat['TOTAL_CURSOS'] ?>"
+                                    title="Eliminar">🗑️</button>
                         </div>
                     </td>
                 </tr>

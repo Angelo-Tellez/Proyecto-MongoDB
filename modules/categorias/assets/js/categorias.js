@@ -108,6 +108,50 @@ async function ejecutarToggle(id, estatusActual, btn) {
 }
 
 /* =========================================================
+   ELIMINAR CATEGORÍA
+   ========================================================= */
+async function ejecutarEliminar(id, btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+
+    const fd = new FormData();
+    fd.append('action',            'eliminar');
+    fd.append('id_categoria',      id);
+    fd.append('confirmar_cascada', '1');
+
+    try {
+        const res  = await fetch('index.php', {
+            method:  'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body:    fd
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+
+        if (data.exito) {
+            // Eliminar la fila de la tabla sin recargar
+            const fila = document.getElementById('fila-cat-' + id);
+            if (fila) {
+                fila.style.transition = 'opacity 0.4s ease';
+                fila.style.opacity    = '0';
+                setTimeout(() => fila.remove(), 400);
+            }
+            mostrarToast('🗑️ ' + data.mensaje, 'exito');
+        } else {
+            mostrarToast('❌ ' + (data.mensaje || 'Error al eliminar.'), 'error');
+            btn.disabled    = false;
+            btn.style.opacity = '';
+        }
+    } catch (e) {
+        mostrarToast('Error de red al eliminar. Intenta de nuevo.', 'error');
+        btn.disabled    = false;
+        btn.style.opacity = '';
+    }
+}
+
+/* =========================================================
    INICIALIZACIÓN
    ========================================================= */
 document.addEventListener('DOMContentLoaded', () => {
@@ -143,10 +187,32 @@ document.addEventListener('DOMContentLoaded', () => {
     /* Toast para mensajes flash de edición/creación (viene en la URL) */
     const urlParams = new URLSearchParams(window.location.search);
     const msg = urlParams.get('msg');
-    if (msg === 'ok_editar') mostrarToast('✅ Categoría actualizada correctamente.', 'exito');
-    if (msg === 'ok_crear')  mostrarToast('✅ Categoría creada correctamente.', 'exito');
-    if (msg === 'ok_toggle') mostrarToast('✅ Estatus actualizado correctamente.', 'exito');
+    if (msg === 'ok_editar')   mostrarToast('✅ Categoría actualizada correctamente.', 'exito');
+    if (msg === 'ok_crear')    mostrarToast('✅ Categoría creada correctamente.', 'exito');
+    if (msg === 'ok_toggle')   mostrarToast('✅ Estatus actualizado correctamente.', 'exito');
     if (msg && msg.startsWith('err_')) {
         mostrarToast('❌ ' + decodeURIComponent(msg.slice(4)), 'error');
     }
+
+    /* Botones de eliminar con modal de confirmación */
+    document.querySelectorAll('.btn-eliminar').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id     = btn.dataset.id;
+            const nombre = btn.dataset.nombre;
+            const cursos = parseInt(btn.dataset.cursos);
+
+            // Mensaje diferente si tiene cursos asignados
+            const subMsg = cursos > 0
+                ? `Tiene <strong>${cursos} curso(s)</strong> asignado(s). <strong>También se eliminarán.</strong>`
+                : 'Esta acción no se puede deshacer.';
+
+            confirmarAccion(
+                `¿Eliminar categoría?`,
+                `La categoría <strong>"${nombre}"</strong> será eliminada permanentemente. ${subMsg}`,
+                '🗑️ Sí, eliminar',
+                () => ejecutarEliminar(id, btn)
+            );
+        });
+    });
+
 });
